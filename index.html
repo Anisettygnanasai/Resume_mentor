@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ResumeMentor - Your AI Career Coach</title>
+    <style>
+        /* --- Core Styles & Fonts --- */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+
+        :root {
+            --primary-color: #4A90E2; /* Professional Blue */
+            --secondary-color: #50E3C2; /* Bright Teal for accents */
+            --bg-color: #F4F7F9;
+            --container-bg: #FFFFFF;
+            --text-color: #333333;
+            --light-text-color: #888888;
+            --agent-bubble-bg: #E9F2FC;
+            --user-bubble-bg: #F0F0F0;
+            --loader-color: var(--primary-color);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: var(--text-color);
+        }
+
+        /* --- Main Layout --- */
+        .app-container {
+            display: flex;
+            width: 90%;
+            max-width: 1200px;
+            height: 90vh;
+            max-height: 800px;
+            background: var(--container-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        /* --- Sidebar for Controls --- */
+        .sidebar {
+            width: 300px;
+            background-color: #ffffff;
+            border-right: 1px solid #e0e0e0;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .sidebar-header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0;
+            color: var(--primary-color);
+        }
+        
+        .sidebar-header h1 .fire {
+             display: inline-block;
+             transform: translateY(2px);
+        }
+
+        .sidebar-header p {
+            font-size: 14px;
+            color: var(--light-text-color);
+        }
+
+        .action-button {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .action-button svg {
+            margin-right: 10px;
+        }
+
+        .action-button:hover {
+            background-color: #357ABD;
+            transform: translateY(-2px);
+        }
+        
+        /* --- Chat Area Layout --- */
+        main.chat-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .chat-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid #e0e0e0;
+            font-weight: 600;
+            color: var(--text-color);
+            flex-shrink: 0;
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            padding: 30px;
+            overflow-y: auto; /* This will now work correctly */
+            display: flex;
+            flex-direction: column;
+            height: 0; /* <-- THE CRITICAL FIX IS HERE */
+        }
+
+        .message-bubble { 
+            max-width: 80%; 
+            line-height: 1.6; 
+            margin-bottom: 20px; 
+            word-wrap: break-word;
+        }
+        .message-content { padding: 15px 20px; border-radius: 18px; }
+        .message-bubble.agent { align-self: flex-start; }
+        .message-bubble.agent .message-content { background-color: var(--agent-bubble-bg); border-top-left-radius: 0; }
+        .message-bubble.user { align-self: flex-end; }
+        .message-bubble.user .message-content { background-color: var(--user-bubble-bg); border-top-right-radius: 0; }
+        
+        /* --- Markdown Formatting --- */
+        .message-content strong {
+            color: var(--primary-color);
+        }
+
+        .chat-input {
+             padding: 20px 30px;
+             border-top: 1px solid #e0e0e0;
+             flex-shrink: 0;
+        }
+        
+        /* --- Loader Animation --- */
+        .loader {
+            width: 40px;
+            height: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .loader .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--loader-color);
+            animation: bounce 0.6s infinite alternate;
+        }
+        .loader .dot:nth-child(2) { animation-delay: 0.2s; }
+        .loader .dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-8px); } }
+    </style>
+</head>
+<body>
+    <input type="file" id="resume-upload-input" accept=".pdf,.docx" style="display: none;">
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>ResumeMentor <span class="fire">💼🔥</span></h1>
+                <p>Your AI Career Coach</p>
+            </div>
+            
+            <button class="action-button" id="upload-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-upload" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/></svg>
+                Upload Resume
+            </button>
+        </aside>
+
+        <main class="chat-container">
+            <header class="chat-header">
+                Chat with ResumeMentor
+            </header>
+            <div class="chat-messages" id="chat-messages">
+                <div class="message-bubble agent">
+                    <div class="message-content">
+                        Hello! I'm ResumeMentor. Please upload your resume (PDF or DOCX) to get started. Let's make it perfect! ✨
+                    </div>
+                </div>
+            </div>
+             <div class="chat-input" style="display:none;"> 
+                <input type="text" id="user-input" placeholder="Ask a follow-up question...">
+                <button id="send-btn">Send</button>
+            </div>
+        </main>
+    </div>
+
+<script>
+    const uploadBtn = document.getElementById('upload-btn');
+    const fileInput = document.getElementById('resume-upload-input');
+    const chatMessages = document.getElementById('chat-messages');
+
+    // Trigger file input when the main button is clicked
+    uploadBtn.addEventListener('click', () => fileInput.click());
+
+    // Handle the file selection
+    fileInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            analyzeResume(file);
+        }
+    });
+
+    function addMessage(sender, message, isHtml = false) {
+        const messageBubble = document.createElement('div');
+        messageBubble.classList.add('message-bubble', sender);
+        
+        const messageContent = document.createElement('div');
+        messageContent.classList.add('message-content');
+        
+        if (isHtml) {
+            messageContent.innerHTML = message;
+        } else {
+            messageContent.textContent = message;
+        }
+        
+        messageBubble.appendChild(messageContent);
+        chatMessages.appendChild(messageBubble);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function showLoader() {
+        const loaderHtml = `
+            <div class="message-bubble agent">
+                <div class="message-content" id="loader-message">
+                    <div class="loader">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+            </div>`;
+        chatMessages.insertAdjacentHTML('beforeend', loaderHtml);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function removeLoader() {
+        const loader = document.getElementById('loader-message');
+        if (loader) {
+            loader.parentElement.remove();
+        }
+    }
+    
+    function simpleMarkdownToHtml(text) {
+        return text
+            // Bold **text**
+            .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            // Italic *text*
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            // Bullets * text
+            .replace(/^\s*\*\s+(.*)/gm, '<ul><li>$1</li></ul>')
+            .replace(/<\/ul>\s*<ul>/g, '') // Merge consecutive lists
+            // Numbered lists 1. text
+            .replace(/^\s*\d+\.\s+(.*)/gm, '<ol><li>$1</li></ol>')
+            .replace(/<\/ol>\s*<ol>/g, '') // Merge consecutive lists
+            // Newlines
+            .replace(/\n/g, '<br>');
+    }
+
+    // --- MAIN FUNCTION TO CALL THE BACKEND ---
+    async function analyzeResume(file) {
+        addMessage('user', `Uploaded: ${file.name}`);
+        showLoader();
+
+        const formData = new FormData();
+        formData.append('resume', file);
+
+        try {
+            const response = await fetch('/analyze', {
+                method: 'POST',
+                body: formData,
+            });
+
+            removeLoader();
+
+            if (response.ok) {
+                const data = await response.json();
+                const formattedFeedback = simpleMarkdownToHtml(data.feedback);
+                addMessage('agent', formattedFeedback, true);
+            } else {
+                const errorData = await response.json();
+                addMessage('agent', `Error: ${errorData.error || 'Something went wrong.'}`);
+            }
+
+        } catch (error) {
+            removeLoader();
+            console.error('Network or server error:', error);
+            addMessage('agent', 'Sorry, I couldn\'t connect to the server. Please check your connection and try again.');
+        }
+
+        // Reset the file input so the user can upload the same file again if they want
+        fileInput.value = '';
+    }
+</script>
+</body>
+</html>
